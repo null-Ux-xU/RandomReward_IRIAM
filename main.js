@@ -6,9 +6,9 @@ class MainLogic
 {
   static rarityTable = ["N", "R", "SR", "SSR", "UR" ,"LR"];
   static baseWeights = [60, 30, 8, 1, 0.75, 0.25];
+  
    // レアリティごとのアイテム
-  static itemsByRarity = {
-  };
+  static itemsByRarity = {};
 }
 
 function callMainAction(count) {
