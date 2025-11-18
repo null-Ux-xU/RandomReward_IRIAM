@@ -4,16 +4,22 @@ import { sortByRarity } from "./sort.js";
 import { arraySummary } from "./arraySummary.js";
 import { createTableElement } from "./createTableElement.js";
 import {saveDataToLocalStorage, getDataFromLocalStorage} from "./localStrage.js";
+import {createTableHeader} from "./createTableHeader.js";
 class MainData
 {
 
   //---変更されないデータ群----
+
+  static rarityNum = 6;
 
   //レアリティのベース
   static rarityTable = ["N", "R", "SR", "SSR", "UR" ,"LR"];
   
   //レアリティ名、排出確率のヘッダーテキスト
   static rarityDisplayHeaderTextArray = ["表示名（編集可）", "排出確率（%）"]; 
+
+  //アイテムのレアリティと名前編集のヘッダーテキスト
+  static itemDisplayHeaderTextArray = ["レアリティ（変更可）","アイテム名（編集可）"];
 
   //デフォルトの確率
   static baseWeights = {
@@ -26,8 +32,7 @@ class MainData
   };
   //------------------------
   
-
-  //---ユーザーの操作によって変更されるデータ群-----
+  //---ユーザーの操作によって自由に変更されるデータ群-----
 
   //レアリティの表示変更用
   static rarityDisplayNames = {
@@ -38,55 +43,71 @@ class MainData
   UR: "UR",
   LR: "LR"
   };
-   //アイテム名とそのレアリティ
-  static itemsByRarity = {};
 
+  //アイテム名とそのレアリティ
+  static resultItems = {
+    N: [], 
+    R: [],
+    SR: [],
+    SSR: [],
+    UR: [],
+    LR: []
+  };
+
+  //ユーザーが設定したレアリティの確率
   static editableWeights = [];
 
   //------------------------
 
+  /**
+   * 編集可能な値全てを取得する
+   * 
+   * @returns 編集可能な変数名をキーとした連想配列
+   */
   static getEditableDatas() {
     const datas = {
       rarityDisplayNames: this.rarityDisplayNames,
-      itemsByRarity: this.itemsByRarity,
+      resultItems: this.resultItems,
       editableWeights: this.editableWeights
     }
-   
     return datas;
   }
 
-
+  /**
+   * 編集可能な値全てに対して値をセットする
+   * 
+   * @param {Object} datas  編集可能な変数名をキーとした連想配列
+   */
   static setEditableDatas(datas) {
     this.rarityDisplayNames = datas["rarityDisplayNames"];
-    this.itemsByRarity = datas["itemsByRarity"];
+    this.resultItems = datas["resultItems"];
     this.editableWeights = datas["editableWeights"];
   }
 
   //デバッグ用
   static debugMainData() {
-  let msg = "=== MainData Debug ===\n\n";
+    let msg = "MainData Debug\n\n";
+    msg += "[editableWeights]\n";
 
-  msg += "[editableWeights]\n";
-  for (const [r, v] of Object.entries(MainData.editableWeights)) {
-    msg += `  ${r}: ${v}\n`;
+    for (const [r, v] of Object.entries(MainData.editableWeights)) {
+      msg += `  ${r}: ${v}\n`;
+    }
+
+    msg += "\n";
+    msg += "[rarityDisplayNames]\n";
+
+    for (const [r, v] of Object.entries(MainData.rarityDisplayNames)) {
+      msg += `  ${r}: ${v}\n`;
+    }
+
+    msg += "\n";
+    msg += "[resultItems]\n";
+
+    for (const [r, items] of Object.entries(MainData.resultItems)) {
+      msg += `  ${r}: ${items?.join(", ") || "(empty)"}\n`;
+    }
+    alert(msg);
   }
-  msg += "\n";
-
-  msg += "[rarityDisplayNames]\n";
-  for (const [r, v] of Object.entries(MainData.rarityDisplayNames)) {
-    msg += `  ${r}: ${v}\n`;
-  }
-  msg += "\n";
-
-  msg += "[itemsByRarity]\n";
-  for (const [r, items] of Object.entries(MainData.itemsByRarity)) {
-    msg += `  ${r}: ${items?.join(", ") || "(なし)"}\n`;
-  }
-
-
-  alert(msg);
-}
-
 }
 
 /**
@@ -95,15 +116,11 @@ class MainData
  * @param {int} count ガチャ回数
  */
 function callMainAction(count) {
-  //入力値
-  const rarityNum = parseInt(document.getElementById("rarityNum").value);
-
   //入力欄から確率を取得
-  const probabilities = MainData.rarityTable.slice(0,rarityNum).map(r => {
+  const probabilities = MainData.rarityTable.slice(0, MainData.rarityNum).map(r => {
     return parseFloat(MainData.editableWeights[r] ?? MainData.baseWeights[r]);
   });
   
-    
   // 合計チェック
   const total = calcTotalValue(probabilities);
   if (Math.abs(parseFloat(total - 100)) > 0.01) {
@@ -115,9 +132,9 @@ function callMainAction(count) {
   let resultLen = gachaLogic({
     gachaCount: count,
     probabilities: probabilities,
-    rarityNum: rarityNum,
+    rarityNum: MainData.rarityNum,
     rarityTable: MainData.rarityTable,
-    itemsByRarity: MainData.itemsByRarity
+    resultItems: MainData.resultItems
   });
 
   //レアリティソート
@@ -144,11 +161,8 @@ function callMainAction(count) {
 }
 
 function updateLabels() {
-  //レアリティの個数を取得
-  const rarityNum = parseInt(document.getElementById("rarityNum").value);
-
-  //id=tableのタグを取得し、中身を消す
-  const container = document.getElementById("table");
+   //id=tableのタグを取得し、中身を消す
+  const container = document.getElementById("rarityTable");
   container.replaceChildren();
 
   //テーブルtagを生成
@@ -156,37 +170,26 @@ function updateLabels() {
   table.style.borderCollapse = "collapse"; 
   table.style.marginTop = "10px";
 
-  //ヘッダーの作成
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-  MainData.rarityDisplayHeaderTextArray.forEach(text => {
-    const th = document.createElement("th");
-    th.textContent = text;
-    applyCellStyle(th);
-    th.style.background = "#f0f0f0";
-    headerRow.appendChild(th);
-  });
-
-  //作成したものを追加
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
+  //ヘッダーの作成と追加
+  table.appendChild(createTableHeader(MainData.rarityDisplayHeaderTextArray));
   
-  //body
+  //bodyの作成
   const tbody = document.createElement("tbody");
 
   //表示されるところ
-  const adjustedWeights = MainData.rarityTable.slice(0, rarityNum).map(rarity => MainData.baseWeights[rarity]);
+  const adjustedWeights = MainData.rarityTable.slice(0, MainData.rarityNum).map(rarity => MainData.baseWeights[rarity]);
   
   //失われた値を最高レアリティに追加
-  adjustedWeights[rarityNum - 1] += parseFloat(100 - calcTotalValue(adjustedWeights));
+  adjustedWeights[MainData.rarityNum - 1] += parseFloat(100 - calcTotalValue(adjustedWeights));
 
-  for (let i = 0; i < rarityNum; i++) {
+  //レアリティの数だけ入力欄を作成
+  for (let i = 0; i < MainData.rarityNum; i++) {
     const rarity = MainData.rarityTable[i];
     const displayName = MainData.rarityDisplayNames[rarity];
     const resultValue = adjustedWeights[i].toFixed(2);
     const row = document.createElement("tr");
 
-    // ▼ 表示名入力
+    //表示名入力
     const  tdNameInput = createTableElement({
       inputType: rarity + "text",
       inputValue: displayName,
@@ -209,6 +212,7 @@ function updateLabels() {
     tdProbInput.addEventListener("input", onProbInput);
     applyCellStyle(tdProbInput);
    
+    //作成したエレメントを追加
     row.appendChild(tdNameInput);
     row.appendChild(tdProbInput);
     tbody.appendChild(row);
@@ -218,85 +222,93 @@ function updateLabels() {
   container.appendChild(table);
 }
 
-function showLineup(rarityNum) {
-  const table = document.getElementById("lineup-table");
-  table.innerHTML = ""; // 表をクリア
+function showLineup() {
+  //lineupTableの取得
+  const table = document.getElementById("lineupTable");
+  table.replaceChildren();
 
+  //ラインナップの総数取得
   const totalCount = parseInt(document.getElementById("lineupNum").value) || 1;
 
-  // --- 表ヘッダー ---
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
+  //ヘッダー作成
+  table.appendChild(createTableHeader(MainData.itemDisplayHeaderTextArray));
 
-  const thRarity = document.createElement("th");
-  thRarity.textContent = "レアリティ（変更可）";
-  const thItem = document.createElement("th");
-  thItem.textContent = "アイテム名（編集可）";
-  const thCount = document.createElement("th");
-  //thCount.textContent = "個数";
-
-  headerRow.appendChild(thRarity);
-  headerRow.appendChild(thItem);
-  //headerRow.appendChild(thCount);
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-
-  // --- 表本体 ---
+  //bodyを作成
   const tbody = document.createElement("tbody");
 
-  // すべてのアイテムをフラットに取得
+  //アイテムを全取得
   const allItems = [];
-  for (let i = 0; i < rarityNum; i++) {
+  for (let i = 0; i < MainData.rarityNum; i++) {
     const rarity = MainData.rarityTable[i];
-    const items = MainData.itemsByRarity[rarity] || [];
-    items.forEach(item => {
-      allItems.push({ rarity, item });
-    });
+    //アイテム名をレアリティ毎に全取得
+    const items = MainData.resultItems[rarity] || [];
+    
+    //レアリティ,名前のオブジェクトとしてallItemsに追加
+    items.forEach(itemName => { allItems.push({ rarity, itemName }); });
   }
 
   // totalCount に合わせて行を作る
   for (let i = 0; i < totalCount; i++) {
-    const data = allItems[i] || { rarity: "N", item: "" }; // 空白はN
+    const itemData = allItems[i] || { rarity: "N", itemName: "" }; // 空白はN
     const row = document.createElement("tr");
 
-    // ▼ レアリティプルダウン
+    //レアリティプルダウン
     const rarityCell = document.createElement("td");
     const select = document.createElement("select");
-    MainData.rarityTable.forEach(r => {
+
+    MainData.rarityTable.slice(0, MainData.rarityNum).forEach(r => {
       const option = document.createElement("option");
       option.value = r;
       option.textContent =  MainData.rarityDisplayNames[r];
-      if (r === data.rarity) option.selected = true;
+      if (r === itemData.rarity) option.selected = true;
       select.appendChild(option);
     });
-    select.addEventListener("change", e => {
-      const newRarity = e.target.value;
-      // 元の配列から削除
-      if (MainData.itemsByRarity[data.rarity]) {
-        const index = MainData.itemsByRarity[data.rarity].indexOf(data.item);
-        if (index >= 0) MainData.itemsByRarity[data.rarity].splice(index, 1);
-      }
-      // 新しいレアリティに追加
-      if (!MainData.itemsByRarity[newRarity]) MainData.itemsByRarity[newRarity] = [];
-      MainData.itemsByRarity[newRarity].push(data.item);
-      showLineup(rarityNum);
-    });
+
+    //レアリティされたら登録
+
     rarityCell.appendChild(select);
 
-    // ▼ アイテム名テキストボックス
-    const itemCell = document.createElement("td");
-    const input = document.createElement("input");
-    input.type = "text";
-    input.value = data.item;
-    input.style.width = "200px";
-    input.addEventListener("input", e => {
-      if (!MainData.itemsByRarity[data.rarity]) MainData.itemsByRarity[data.rarity] = [];
-      const idx = MainData.itemsByRarity[data.rarity].indexOf(data.item);
-      if (idx >= 0) MainData.itemsByRarity[data.rarity][idx] = e.target.value;
-      data.item = e.target.value;
+    //アイテム名テキストボックス
+    const itemCell = createTableElement({
+      inputType: "text",
+      inputValue: itemData.itemName,
+      ariaLabel: "上から" + (i + 1) + "番目のアイテム名入力欄",
+      styleWidthValue: "200px",
+      rarityName: itemData.rarity
     });
     
-    itemCell.appendChild(input);
+    //プルダウンに変更があったら登録
+    select.addEventListener("change", e => {
+      //変更後のレアリティ
+      const newRarity = e.target.value;
+
+      //現在のレアリティの同名を検索
+      const index = MainData.resultItems[itemData.rarity].indexOf(itemData.itemName);
+
+      //元の配列から削除
+      if (index >= 0) MainData.resultItems[itemData.rarity].splice(index, 1);
+      
+      //新しいレアリティに追加
+      MainData.resultItems[newRarity].push(itemData.itemName);
+      showLineup();
+    });
+
+    //名前入力欄に変更があったら登録
+    itemCell.addEventListener("change", e => {
+
+      const newName = e.target.value;
+
+      //現在のレアリティの同名を検索
+      const index = MainData.resultItems[itemData.rarity].indexOf(itemData.itemName);
+
+      //元の配列から削除
+      if (index >= 0) MainData.resultItems[itemData.rarity].splice(index, 1);
+
+      //新しい名前を追加
+      MainData.resultItems[itemData.rarity].push(newName);
+      showLineup();
+    });
+
     row.appendChild(rarityCell);
     row.appendChild(itemCell);
     tbody.appendChild(row);
@@ -304,7 +316,7 @@ function showLineup(rarityNum) {
 
   table.appendChild(tbody);
 
-  // --- 表スタイル ---
+  //表スタイル
   table.style.borderCollapse = "collapse";
   table.style.marginTop = "10px";
   table.querySelectorAll("th, td").forEach(cell => {
@@ -382,10 +394,10 @@ function calcTotalValue(numberArray){
  */
 function getCorrectedBaceWight(rarityNum){
   //表示されるところ
-  const adjustedWeights = MainData.baseWeights.slice(0, rarityNum);
+  const adjustedWeights = MainData.baseWeights.slice(0, MainData.rarityNum);
   
   //失われた値を最高レアリティに追加
-  adjustedWeights[rarityNum - 1] += parseFloat(100 - calcTotalValue(adjustedWeights));
+  adjustedWeights[MainData.rarityNum - 1] += parseFloat(100 - calcTotalValue(adjustedWeights));
   return adjustedWeights;
 }
 
@@ -396,7 +408,7 @@ function onNameInput(e) {
 
   MainData.rarityDisplayNames[rarity] = text;
   localStorage.setItem("rarityDisplayNames", JSON.stringify(MainData.rarityDisplayNames));
-  showLineup(parseInt(document.getElementById("rarityNum").value));
+  showLineup();
 }
 
 // ▼ 確率変更
@@ -409,25 +421,23 @@ function onProbInput(e) {
 window.addEventListener("DOMContentLoaded", () => {
   loadMainData();
   updateLabels();
-  const rarityNum = parseInt(document.getElementById("rarityNum").value) || 1;
-  showLineup(rarityNum);
+  showLineup(MainData.rarityNum);
 
 
   //デバッグ用
   document.getElementById("showMaindatabutton").addEventListener("click", () => MainData.debugMainData());
 
-
   // 行数変更時に再描画
   document.getElementById("lineupNum").addEventListener("change", () => {
-  const rarityNum = parseInt(document.getElementById("rarityNum").value);
-  showLineup(rarityNum);
+    showLineup(MainData.rarityNum);
   });
   
   //rarityNumが変更された時
   document.getElementById("rarityNum").addEventListener("change", () => {
+    //変更された値を保存
+    MainData.rarityNum = parseInt(document.getElementById("rarityNum").value);
     updateLabels();
-    const rarityNum = parseInt(document.getElementById("rarityNum").value);
-    showLineup(rarityNum);
+    showLineup(MainData.rarityNum);
   });
 
   //gachaSingleがクリックされた時

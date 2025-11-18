@@ -12,7 +12,7 @@
   <div id="rarityNamesEditor"></div>
   <label>レアリティ数量 <input id="rarityNum" type="number" value="6" step="1" min="1" max="6"></label><br>
 
-  <div id="table">
+  <div id="rarityTable">
     <label>N  : <input id="probN"  type="number" value="60" step="0.1"> %</label><br>
     <label>R  : <input id="probR"  type="number" value="30" step="0.1"> %</label><br>
     <label>SR : <input id="probSR" type="number" value="8" step="0.1"> %</label><br>
@@ -32,16 +32,15 @@
   </div>
 
   <h3>ガチャラインナップ <input id="lineupNum"  type="number" value="5" step="1" min="1"> 個</h3>
-  <table id="lineup-table"></table>
+  <table id="lineupTable"></table>
 
   <h3>ガチャ回数</h3>
   <input id="gachaCount" type="number" value="100" min="1" step="1" min="1"> 回
+  
+  <button id="gachaSingle">単発</button>
+  <button id="gachaTen">10連</button>
+  <button id="gachaCustom">任意回数</button>
 
-  <div style="margin-top:10px;">
-    <button id="gachaSingle">単発</button>
-    <button id="gachaTen">10連</button>
-    <button id="gachaCustom">任意回数</button>
-  </div>
   <div>
   <label>
     <input type="checkbox" id="combineDuplicates" checked>
