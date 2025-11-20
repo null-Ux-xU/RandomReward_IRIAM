@@ -45,18 +45,10 @@ class MainData
   };
 
   //アイテム名とそのレアリティ
-  static resultItems = {
-    N: [], 
-    R: [],
-    SR: [],
-    SSR: [],
-    UR: [],
-    LR: []
-  };
+  static resultItems = {};
 
   //ユーザーが設定したレアリティの確率
   static editableWeights = [];
-
   //------------------------
 
   /**
@@ -89,22 +81,24 @@ class MainData
     let msg = "MainData Debug\n\n";
     msg += "[editableWeights]\n";
 
-    for (const [r, v] of Object.entries(MainData.editableWeights)) {
+    for (const [r, v] of Object.entries(this.editableWeights)) {
       msg += `  ${r}: ${v}\n`;
     }
 
     msg += "\n";
     msg += "[rarityDisplayNames]\n";
 
-    for (const [r, v] of Object.entries(MainData.rarityDisplayNames)) {
+    for (const [r, v] of Object.entries(this.rarityDisplayNames)) {
       msg += `  ${r}: ${v}\n`;
     }
 
     msg += "\n";
     msg += "[resultItems]\n";
 
-    for (const [r, items] of Object.entries(MainData.resultItems)) {
-      msg += `  ${r}: ${items?.join(", ") || "(empty)"}\n`;
+    for (const [indexKey, itemObj] of Object.entries(this.resultItems)) {
+      const name = itemObj.itemName || "(no name)";
+      const rarity = itemObj.rarity || "(no rarity)";
+      msg += `  ${indexKey}: [Rarity: ${rarity}] ${name}\n`;
     }
     alert(msg);
   }
@@ -191,7 +185,9 @@ function updateLabels() {
 
     //表示名入力
     const  tdNameInput = createTableElement({
-      inputType: rarity + "text",
+      elementId: rarity + "-DisplayName",
+      elementName: "editRarityDisplayNameForm",
+      inputType: "text",
       inputValue: displayName,
       ariaLabel: "レアリティ" + rarity + "を任意の文字に置き換える為の入力欄",
       styleWidthValue: "120px",
@@ -202,6 +198,8 @@ function updateLabels() {
 
     //確率入力
     const  tdProbInput = createTableElement({
+      elementId: rarity + "-Probability",
+      elementName: "editRarityProbabilityForm",
       inputType: "number",
       inputValue: resultValue,
       ariaLabel: "レアリティ" + rarity + "の排出確率を入力する欄",
@@ -223,7 +221,7 @@ function updateLabels() {
 }
 
 function showLineup() {
-  //lineupTableの取得
+  //lineupTableの取得と初期化
   const table = document.getElementById("lineupTable");
   table.replaceChildren();
 
@@ -236,26 +234,22 @@ function showLineup() {
   //bodyを作成
   const tbody = document.createElement("tbody");
 
-  //アイテムを全取得
-  const allItems = [];
-  for (let i = 0; i < MainData.rarityNum; i++) {
-    const rarity = MainData.rarityTable[i];
-    //アイテム名をレアリティ毎に全取得
-    const items = MainData.resultItems[rarity] || [];
-    
-    //レアリティ,名前のオブジェクトとしてallItemsに追加
-    items.forEach(itemName => { allItems.push({ rarity, itemName }); });
-  }
-
   // totalCount に合わせて行を作る
   for (let i = 0; i < totalCount; i++) {
-    const itemData = allItems[i] || { rarity: "N", itemName: "" }; // 空白はN
+    //1行ごとに要素を作成
     const row = document.createElement("tr");
+    row.id = "indexNo." + i;
+
+    const itemData = MainData.resultItems[row.id] || { rarity: "N", itemName: "" }; // 空白はN
 
     //レアリティプルダウン
     const rarityCell = document.createElement("td");
     const select = document.createElement("select");
+    select.id = "index-" + i + "-editItemRarityForm";
+    select.name = "editItemRarityForm";
+    select.ariaLabel = "上から" + (i + 1) + "番目にあるアイテムのレアリティ";
 
+    //レアリティの数だけプルダウンの要素を作成
     MainData.rarityTable.slice(0, MainData.rarityNum).forEach(r => {
       const option = document.createElement("option");
       option.value = r;
@@ -264,15 +258,15 @@ function showLineup() {
       select.appendChild(option);
     });
 
-    //レアリティされたら登録
-
     rarityCell.appendChild(select);
 
     //アイテム名テキストボックス
     const itemCell = createTableElement({
+      elementId: "index-" + i + "-editItemNameForm",
+      elementName: "editItemNameForm",
       inputType: "text",
       inputValue: itemData.itemName,
-      ariaLabel: "上から" + (i + 1) + "番目のアイテム名入力欄",
+      ariaLabel: "上から" + (i + 1) + "番目にあるアイテム名入力欄",
       styleWidthValue: "200px",
       rarityName: itemData.rarity
     });
@@ -280,39 +274,45 @@ function showLineup() {
 
     //名前入力欄に変更があったら登録
     itemCell.addEventListener("change", e => {
+      //入力欄の番号取得
+      const arraykey = row.id;
 
+      //変更された値の取得
       const newName = e.target.value;
-
-      //現在のレアリティの同名を検索
-      const index = MainData.resultItems[itemData.rarity].indexOf(itemData.itemName);
-
-      //元の配列から削除
-      if (index >= 0) MainData.resultItems[itemData.rarity].splice(index, 1);
-
+      
+      //対象のindex番号がなかったら作成
+      if (!MainData.resultItems[arraykey]) {
+        MainData.resultItems[arraykey] = {
+          itemName: itemData.itemName,
+          rarity: itemData.rarity
+        };
+      }
       //新しい名前を追加
-      MainData.resultItems[itemData.rarity].push(newName);
-      itemData.itemName = newName;
+      MainData.resultItems[arraykey].itemName = newName;
     });
 
 
     //プルダウンに変更があったら登録
     select.addEventListener("change", e => {
-      //変更後のレアリティ
+      //入力欄の番号をチェック
+      const arraykey = row.id;
+
+      //変更された値の取得
       const newRarity = e.target.value;
 
-      //現在のレアリティの同名を検索
-      const index = MainData.resultItems[itemData.rarity].indexOf(itemData.itemName);
-
-      //元の配列から削除
-      if (index >= 0) MainData.resultItems[itemData.rarity].splice(index, 1);
-      
+      //対象のindex番号がなかったら作成
+      if (!MainData.resultItems[arraykey]) {
+        MainData.resultItems[arraykey] = {
+          itemName: itemData.itemName,
+          rarity: itemData.rarity
+        };
+      }
+  
       //新しいレアリティに追加
-      MainData.resultItems[newRarity].push(itemData.itemName);
-      itemData.rarity = newRarity;
+      MainData.resultItems[arraykey].rarity = newRarity;
     });
 
-    
-
+    //作成したエレメントを追加
     row.appendChild(rarityCell);
     row.appendChild(itemCell);
     tbody.appendChild(row);
@@ -407,7 +407,7 @@ function getCorrectedBaceWight(rarityNum){
 
 //表示名変更
 function onNameInput(e) {
-  const rarity = e.target.dataset.rarity;
+  const rarity = e.target.id.substr(0, 1);
   const text = e.target.value.trim() || rarity;
 
   MainData.rarityDisplayNames[rarity] = text;
@@ -417,7 +417,7 @@ function onNameInput(e) {
 
 // ▼ 確率変更
 function onProbInput(e) {
-  const rarity = e.target.dataset.rarity;
+  const rarity = e.target.id.substr(0, 1);
   MainData.editableWeights[rarity] = parseFloat(e.target.value) ?? MainData.baseWeights[rarity];
 }
 

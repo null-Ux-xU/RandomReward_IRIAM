@@ -8,3 +8,23 @@ button {
   padding: 10px 20px;
   cursor: pointer;
 }
+.table-container {
+  width: 100%;
+  overflow-x: auto; /* スマホでは横スクロール可 */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px; /* 最低幅を確保して崩れを防止 */
+}
+
+th, td {
+  border: 1px solid black;
+  padding: 4px 8px;
+}
+
+th {
+  background: #f0f0f0;
+  text-align: center;
+}
