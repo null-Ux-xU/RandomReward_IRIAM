@@ -31,7 +31,7 @@ select {
   background: #f9f9f9;
 }
 select option {
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .loadZipName {
@@ -51,7 +51,7 @@ select option {
 
 /*デバッグボタンの非表示*/
 .debug{
-  
+  display: none;
 }
 
 button,

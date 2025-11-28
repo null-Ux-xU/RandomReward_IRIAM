@@ -653,12 +653,14 @@ window.addEventListener("DOMContentLoaded", () => {
   
   document.getElementById("lineupPlus").onclick = () => { 
     lineupNum.stepUp();
+    MainData.itemLineupNum = lineupNum.value;
     showLineup();
     
   };
 
   document.getElementById("lineupMinus").onclick = () => {
     lineupNum.stepDown();
+    MainData.itemLineupNum = lineupNum.value;
     showLineup();
   };
 
