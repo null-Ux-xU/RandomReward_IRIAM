@@ -577,7 +577,8 @@ function getSortType() {
 
 async function activeHistory() {
   await loadHistoryFromIndexedDB(async (history) => {
-    createURL(buildHistoryString(history, MainData.rarityDisplayNames));
+    const returnValue = buildHistoryString(history, MainData.rarityDisplayNames);
+    if(returnValue !== false) createURL(returnValue);
   });
 }
 
@@ -588,7 +589,7 @@ window.addEventListener("DOMContentLoaded", () => {
   updateLineupToZip();
   updateLabels();
   showLineup();
-
+  activeHistory();
   const input = document.querySelector('input[type="text"][name="editRarityDisplayNameForm"]');
   input.addEventListener('input', () => {
     if (input.value.length > 10) {
