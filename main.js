@@ -5,8 +5,8 @@ import { createTableElement } from "./Create/createTableElement.js";
 import {saveDataToLocalStorage, getDataFromLocalStorage} from "./DataSave/localStrage.js";
 import {createTableHeader} from "./Create/createTableHeader.js";
 import {importZipFile, getResultItemsToFile} from "./DataSave/importZip.js";
-import {saveToIndexedDB, loadFromIndexedDB, clearAllIndexedDBData, showAllIndexedDBData} from "./DataSave/indexedDB.js";
-
+import {saveToIndexedDB, loadFromIndexedDB, clearAllIndexedDBData, showAllIndexedDBData, saveHistory, loadHistoryFromIndexedDB, buildHistoryString} from "./DataSave/indexedDB.js";
+import {getFormattedDate} from "./formattedDate.js"
 class MainData
 {
 
@@ -236,6 +236,7 @@ async function callMainAction(count) {
     resultLen = arraySummary(resultLen);
   }
 
+
   //表示処理
   const resultIndexNo = [];
   const tbody = document.getElementById("resultBody");
@@ -255,11 +256,13 @@ async function callMainAction(count) {
 
     resultText += `${MainData.rarityDisplayNames[res.rarity]}：${res.item} ×${res.val || 1}個\n`;
   }
+
   document.getElementById("resultElements").hidden = false;
-  
   const twitterTag = "#空のつーる";
   resultText += twitterTag; 
   MainData.tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(resultText)}`;
+
+  updateHistory(resultLen, userName, name?.trim());
 
   if(MainData.onLoadedDatakey){
     let faileName = `${userName}さん_ガチャ名[${name?.trim() || "なし"}]_${count}連結果`;
@@ -547,6 +550,21 @@ function onProbInput(e) {
   MainData.editableWeights[rarity] = parseFloat(e.target.value) ?? MainData.baseWeights[rarity];
 }
 
+async function updateHistory(data, userName, gachaName) {
+  await loadHistoryFromIndexedDB(async history => {
+    const date = getFormattedDate();
+
+    if (!history[date]) history[date] = {};
+    if (!history[date][userName]) history[date][userName] = {};
+    if (!history[date][userName][gachaName]) {
+      history[date][userName][gachaName] = {results: []};
+    }
+    history[date][userName][gachaName].results.push(data);
+
+    await saveHistory(history);
+  });
+}
+
 function getSortType() {
   const selected = document.querySelector('input[name="raritySort"]:checked');
   return selected?.value ?? "none";
@@ -715,6 +733,24 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  document.getElementById("resultdownload").addEventListener("click", async ()=> {
+    await loadHistoryFromIndexedDB(async (history) => {
+      console.log(await buildHistoryString(history, MainData.rarityDisplayNames));
+    });
+  });
+  document.getElementById("deleteHistory").addEventListener("click", async ()=>{
+    // 確認ポップアップ
+    if (confirm(`ガチャの履歴が「全て」削除されます。\nよろしいですか？`)) {
+        //全削除
+        clearAllIndexedDBData("history").then(() => {
+          location.reload();  //ページのリロード
+          alert("削除が完了しました。");
+        }).catch(err => {
+          console.error("削除に失敗しました:", err);
+          alert("削除に失敗しました。");
+        });
+    }
+  });
   document.getElementById("tweetButton").addEventListener("click", ()=> {
     //新しいタブで開く
     window.open(MainData.tweetUrl, "_blank");
