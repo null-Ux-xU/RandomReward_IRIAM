@@ -32,4 +32,16 @@ export class MersenneTwister {
   random() {
     return this.generate() / 4294967296;//2³²
   }
+  static createMTWithStrongSeed() {
+    const t = performance.now(); // 高解像度タイマー(ms + μs)
+    const n = Date.now(); // UNIXタイム(ms)
+    
+    // ユーザー操作起因の差を強く広げる
+    let seed = 0;
+    seed ^= (n & 0xffffffff);
+    seed ^= Math.floor(t * 1000); // μsレベルを混ぜる
+    seed ^= (Math.random() * 0xffffffff) | 0; // 追加分散
+    
+    return new MersenneTwister(seed >>> 0);
+}
 }

@@ -502,24 +502,3 @@ details.terms .terms-content p {
   border: 2px solid #CC91A2;
 }
 
-/* ▼スマホ（WebKit系）専用強制上書き対策 */
-@supports (-webkit-touch-callout: default) {
-
-  details.terms .terms-content ul,
-  details.terms .terms-content li {
-    list-style: none !important;
-    list-style-type: none !important;
-    -webkit-text-size-adjust: 100% !important;
-  }
-
-  details.terms .terms-content ul {
-    margin: 0 !important;
-    padding: 0 0 0 5px !important;
-  }
-
-  details.terms .terms-content li {
-    display: block !important;
-    margin-bottom: 10px !important;
-  }
-
-}

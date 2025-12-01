@@ -63,8 +63,8 @@ export function gachaLogic({gachaCount, probabilities, rarityNum, rarityTable, i
     }
 
     //乱数生成
-    const mt = new MersenneTwister(Date.now());
-  
+    const mt = MersenneTwister.createMTWithStrongSeed();
+
     //結果を代入する配列
     const results = [];
 
