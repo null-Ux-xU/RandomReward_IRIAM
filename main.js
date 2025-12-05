@@ -604,6 +604,16 @@ window.addEventListener("DOMContentLoaded", () => {
   //新規ファイルのインポート
   const element = document.getElementById("importZip");
   element.addEventListener("change", async(e)=>{
+    console.log(e.target.value);
+
+    //value = ファイルパス
+    let filePath = new String(e.target.value);
+
+    //拡張子が[.zip]であるかの確認(最終文字から4文字のみを見て判断) 
+    if(!filePath.includes(".zip", filePath.length - 4)) {
+      showNotification("zipファイルを選択してください", "error", 4000);
+      return;
+    }
     const returnParam = await importZipFile(e);
     if(!returnParam) return;
     

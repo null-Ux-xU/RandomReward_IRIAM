@@ -46,7 +46,8 @@ async function  takeOutFileContents(file) {
     for (const fileEntry of files) {
         const lowerName = fileEntry.name.toLowerCase();
 
-        if (!allowedExtensions.some(ext => lowerName.endsWith(ext))) continue; // 対象外のファイルはスキップ
+        //対象外のファイルはスキップ
+        if (!allowedExtensions.some(ext => lowerName.endsWith(ext))) continue;
     
         //itemName と rarity を設定
         resultItems["indexNo." + indexCount] = {
