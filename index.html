@@ -15,8 +15,7 @@
       <dev class="TopicsText">
         利用規約の変更、機能追加をお知らせします
         <ul>
-          <li>・11/30 ガチャを引いた人の設定できるようにしました。</li>
-          <li>・11/30 履歴のダウンロードができるようになりました。</li>
+          <li>・12/05 履歴を.txtか.csvか選べるようになりました</li>
         </ul>
         
       </dev>
@@ -109,46 +108,53 @@
     <table id="lineupTable" class="lineupTable"></table>
 
     <details>
-      <summary>詳細設定</summary>
-
+      <summary>履歴</summary>
       <a id="resultdownload" class="download-button">
         <span class="text">履歴のダウンロード</span>
       </a>
       <button id="deleteHistory" class="deleteDataButton">履歴の削除</button>
 
-      <div> 
-      <label class="checkbox checkbox--icon-right"> 
-        ラインナップに無いレアリティを出さない 
-        <input class="checkbox_icon" type="checkbox" id="isFilterOnlyActiveItems" checked/> 
-      </label> 
-      <label class="checkbox checkbox--icon-right"> 
-        重複した結果をまとめて表示する 
-        <input class="checkbox_icon" type="checkbox" id="combineDuplicates" checked/> 
-      </label> 
-    </div> 
-    <div class="sort-option-group"> 
-      <label class="radio"> 
-        <input type="radio" name="raritySort" value="asc" /> レアリティ昇順ソート(N → LR) 
-      </label> 
-      <label class="radio"> 
-        <input type="radio" name="raritySort" value="desc" /> レアリティ降順ソート(LR → N)
-      </label> 
-      <label class="radio"> 
-        <input type="radio" name="raritySort" value="none" checked /> ソートなし 
-      </label> 
-    </div> 
-    <label class="userName">
-      回した人の名前<br>
-      <input type="text" id="userName" autocomplete="on">
-    </label>
+      <div class="downloadTypeGroup"> 
+        <label class="radio"> 
+          <input type="radio" name="downloadType" value=".txt" checked/> テキストファイルでダウンロード
+        </label> 
+        <label class="radio"> 
+          <input type="radio" name="downloadType" value=".csv" /> csvファイルでダウンロード
+        </label> 
+      </div> 
     </details>
-    
-
-
-
+    <br>
+    <details>
+      <summary>詳細設定</summary>
+      <div> 
+        <label class="checkbox checkbox--icon-right"> 
+          ラインナップに無いレアリティを出さない 
+          <input class="checkbox_icon" type="checkbox" id="isFilterOnlyActiveItems" checked/> 
+        </label> 
+        <label class="checkbox checkbox--icon-right"> 
+          重複した結果をまとめて表示する 
+          <input class="checkbox_icon" type="checkbox" id="combineDuplicates" checked/> 
+        </label> 
+      </div> 
+      <div class="sort-option-group"> 
+        <label class="radio"> 
+          <input type="radio" name="raritySort" value="asc" /> レアリティ昇順ソート(N → LR) 
+        </label> 
+        <label class="radio"> 
+          <input type="radio" name="raritySort" value="desc" /> レアリティ降順ソート(LR → N)
+        </label> 
+        <label class="radio"> 
+          <input type="radio" name="raritySort" value="none" checked /> ソートなし 
+        </label> 
+      </div> 
+      <label class="userName">
+        回した人の名前<br>
+        <input type="text" id="userName" autocomplete="on">
+      </label>
+    </details>
 
     <label class="gachaCount">n = <input id="gachaCount" type="number" value="100" min="1" step="1" min="1"> 回</label><br>
-  
+
     <button id="gachaSingle">単発</button>
     <button id="gachaTen">10連</button>
     <button id="gachaCustom"class="gachaCustom">n回</button>
@@ -170,7 +176,7 @@
       </a>
       <button id="tweetButton">結果をツイートする</button>
     </div>
-    <div class="version-tag">v1.0.2</div>
+    <div class="version-tag">v1.1.2</div>
 
     
     <script type="module" src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>

@@ -5,10 +5,11 @@ import { createTableElement } from "./Create/createTableElement.js";
 import {saveDataToLocalStorage, getDataFromLocalStorage} from "./DataSave/localStrage.js";
 import {createTableHeader} from "./Create/createTableHeader.js";
 import {importZipFile, getResultItemsToFile} from "./DataSave/importZip.js";
-import {saveToIndexedDB, loadFromIndexedDB, clearAllIndexedDBData, showAllIndexedDBData, saveHistory, loadHistoryFromIndexedDB, buildHistoryString} from "./DataSave/indexedDB.js";
+import {saveToIndexedDB, loadFromIndexedDB, clearAllIndexedDBData, showAllIndexedDBData, saveHistory, loadHistoryFromIndexedDB} from "./DataSave/indexedDB.js";
 import {getFormattedDate} from "./DataSave/formattedDate.js";
-import { createURL } from "./DataSave/exportHistoryToText.js";
+import { createCsvURL, createTextURL} from "./DataSave/exportHistoryToText.js";
 import { showNotification } from "./showNotification.js";
+import { buildHistoryToTextString, buildHistoryToCsvString} from "./DataSave/exportHistoryData.js";
 
 class MainData
 {
@@ -576,10 +577,30 @@ function getSortType() {
   return selected?.value ?? "none";
 }
 
+function getDownloadType() {
+  const selected = document.querySelector('input[name="downloadType"]:checked');
+  return selected?.value ?? "none";
+}
+
+/**
+ * 履歴をダウンロードするためのURLを設定する
+ */
 async function activeHistory() {
   await loadHistoryFromIndexedDB(async (history) => {
-    const returnValue = buildHistoryString(history, MainData.rarityDisplayNames);
-    if(returnValue !== false) createURL(returnValue);
+    let resultValue;
+    switch(getDownloadType()) {
+      case ".txt": 
+        resultValue = buildHistoryToTextString(history, MainData.rarityDisplayNames);
+        if(resultValue !== false) createTextURL(resultValue);
+        break;
+
+      case ".csv":
+        resultValue = buildHistoryToCsvString(history,MainData.rarityDisplayNames);
+        if(resultValue !== false) createCsvURL(resultValue);
+        break;
+
+      case "none": return;
+    };
   });
 }
 
@@ -662,6 +683,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if(!gachaName) {
       nameField.style.border = "5px solid #8a0b0b";
       errorText.hidden = false;
+      await showNotification("名前を入力してください", "error", 1500);
       return;
     }
 
@@ -759,16 +781,18 @@ window.addEventListener("DOMContentLoaded", () => {
       await callMainAction(count);
     }
   });
-
-  document.getElementById("resultdownload").addEventListener("click", async ()=> {
-    await loadHistoryFromIndexedDB(async (history) => {
-      const result = buildHistoryString(history, MainData.rarityDisplayNames);
-      if(result === false) {
-        await showNotification("履歴が存在しません。", "error");
-      }
-      console.log(result);
-    });
+  //履歴の取得(ダウンロードリンクがない場合)
+  const resultdownload = document.querySelector('a#resultdownload');
+  resultdownload.addEventListener("click", async ()=> {
+    const href = resultdownload.getAttribute("href");
+    if(href !== null) return;
+    await showNotification("履歴が存在しません。", "error");
   });
+  //ラジオボタンの変更イベント
+  document.querySelectorAll('input[name="downloadType"]').forEach((radio) => {
+    radio.addEventListener("change", async() => await activeHistory());
+  });
+
   document.getElementById("deleteHistory").addEventListener("click", async ()=>{
     // 確認ポップアップ
     if (confirm(`ガチャの履歴が「全て」削除されます。\nよろしいですか？`)) {
